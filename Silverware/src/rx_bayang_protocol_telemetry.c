@@ -59,7 +59,7 @@ THE SOFTWARE.
 #define HOPPING_NUMBER 4
 
 
-#ifdef RX_BAYANG_PROTOCOL_TELEMETRY
+#if defined(RX_BAYANG_PROTOCOL_TELEMETRY) || defined(RX_BAYANG_PROTOCOL_TELEMETRY_PID) //extra condition for PID displaying (added by silverAG)
 
 extern float rx[4];
 extern char aux[AUXNUMBER];
@@ -69,8 +69,9 @@ extern char auxchange[AUXNUMBER];
 
 char lasttrim[4];
 char rfchannel[4];
-int rxaddress[5];
-int rxmode = 0;
+//int rxaddress[5]; // not used (!)
+//int rxmode = 0; //disabled for enabling BLE and Devo TLM
+extern int rxmode; //added for enabling BLE and Devo TLM
 int rf_chan = 0;
 
 
@@ -87,7 +88,7 @@ void writeregs(uint8_t data[], uint8_t size)
 
 
 
-void rx_init()
+void rx_init_tlm()
 {
 
 
@@ -188,6 +189,39 @@ writeregs( demodcal , sizeof(demodcal) );
 
 
 
+
+// re-initializing TX address for switching back to Devo telemetry - added by silverAG
+#if ((defined(RX_BAYANG_PROTOCOL_TELEMETRY) || defined(RX_BAYANG_PROTOCOL_TELEMETRY_PID)) && defined(RX_BAYANG_BLE_APP))
+void rx_init_tlm2()
+{
+	delay(100);
+	extern uint8_t rxaddr_global[6];  // original TX address - filled up at bind code where rxaddr array is filled also
+                      
+  // write original rx address
+  writeregs( rxaddr_global , sizeof(rxaddr_global) );
+  rxaddr_global[0] = 0x30; // tx register ( write ) number
+                      
+  // write original tx address
+  writeregs( rxaddr_global , sizeof(rxaddr_global) );
+	
+	xn_writereg(0x25, rfchannel[rf_chan]);    // Set channel frequency 
+	delay(100);
+}
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //#define RXDEBUG
 
 #ifdef RXDEBUG
@@ -273,6 +307,58 @@ void send_telemetry()
     txdata[0] = 133;
     txdata[1] = lowbatt;
 
+// PID code start (added by silverAG)
+// ----------------------------------
+#ifdef RX_BAYANG_PROTOCOL_TELEMETRY_PID
+	extern int tlm_or_pid;
+	if (tlm_or_pid)
+	{
+	extern float pidkp[]; // current_PID_for_display = 0, 1, 2
+	extern float pidki[]; // current_PID_for_display = 3, 4, 5
+	extern float pidkd[]; // current_PID_for_display = 6, 7, 8
+	extern float apidkp[]; // current_PID_for_display = 9, 10
+	extern float apidki[]; //  current_PID_for_display = 11, 12
+	extern float apidkd[]; //  current_PID_for_display = 13, 14
+
+	extern int current_pid_term; //0 = pidkp, 1 = pidki, 2 = pidkd
+	extern int current_pid_axis; //0 = roll, 1 = pitch, 2 = yaw
+  int selectedPID = ((current_pid_term)*3)+(current_pid_axis);
+	unsigned long pid_for_display = 0;
+
+#ifdef COMBINE_PITCH_ROLL_PID_TUNING
+ if (selectedPID == 1)	selectedPID =2;
+ if (selectedPID == 4)	selectedPID =5;
+ if (selectedPID == 7)	selectedPID =8;
+#endif
+
+		int PIDposition = 0;
+  switch ( selectedPID )
+ {
+	 case 0:pid_for_display =(uint16_t)(pidkp[0]*100.0f);PIDposition=11;break;
+	 case 1:pid_for_display =(uint16_t)(pidkp[1]*100.0f);PIDposition=12;break;
+	 case 2:pid_for_display =(uint16_t)(pidkp[2]*100.0f);PIDposition=13;break;
+	 case 3:pid_for_display =(uint16_t)(pidki[0]*100.0f);PIDposition=21;break;
+	 case 4:pid_for_display =(uint16_t)(pidki[1]*100.0f);PIDposition=22;break;
+	 case 5:pid_for_display =(uint16_t)(pidki[2]*100.0f);PIDposition=23;break;
+	 case 6:pid_for_display =(uint16_t)(pidkd[0]*100.0f);PIDposition=31;break;
+	 case 7:pid_for_display =(uint16_t)(pidkd[1]*100.0f);PIDposition=32;break;
+	 case 8:pid_for_display =(uint16_t)(pidkd[2]*100.0f);PIDposition=33;break;	
+ }	
+
+
+		int vbattx = pid_for_display;
+		txdata[3] = (vbattx >> 8) & 0xff;
+    txdata[4] = vbattx & 0xff;
+
+		vbattx = 900+(PIDposition);
+    txdata[5] = (vbattx >> 8) & 0xff;
+    txdata[6] = vbattx & 0xff;
+	}	
+else
+// ------------
+// PID code end	
+#endif
+{	
     int vbatt = vbattfilt * 100;
 // battery volt filtered    
     txdata[3] = (vbatt >> 8) & 0xff;
@@ -282,6 +368,8 @@ void send_telemetry()
 // battery volt compensated 
     txdata[5] = (vbatt >> 8) & 0xff;
     txdata[6] = vbatt & 0xff;
+}
+
 
     int temp = packetpersecond / 2;
     if (temp > 255)
@@ -428,7 +516,8 @@ unsigned long lastrxtime;
 unsigned long failsafetime;
 unsigned long secondtimer;
 
-int failsafe = 0;
+//int failsafe = 0; //disabled for enabling BLE and Devo TLM
+extern int failsafe; //added for enabling BLE and Devo TLM
 
 
 unsigned int skipchannel = 0;
@@ -437,7 +526,7 @@ int timingfail = 0;
 int telemetry_enabled = 0;
 int packet_period = PACKET_PERIOD;
 
-void checkrx(void)
+void checkrx_tlm(void)
 {
     int packetreceived = checkpacket();
     int pass = 0;
@@ -462,10 +551,12 @@ void checkrx(void)
                         
 
                       uint8_t rxaddr[6] = { 0x2a ,  };
-                      
+											extern uint8_t rxaddr_global[6];
+											
                       for ( int i = 1 ; i < 6; i++)
                       {
                         rxaddr[i] = rxdata[i];
+												rxaddr_global[i] = rxdata[i];
                       }
                       // write new rx address
                       writeregs( rxaddr , sizeof(rxaddr) );
