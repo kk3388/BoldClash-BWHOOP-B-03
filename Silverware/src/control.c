@@ -215,8 +215,39 @@ float rate_multiplier = 1.0;
                 // U D R - Increase value
                 // U D L - Descrease value
                // ledblink = blink; //Will cause led logic to blink the number of times ledblink has stored in it.
-                #endif
 
+	         #endif
+
+	// UUR gestures for turning on/off PIDs instead battery values at Devo 7e TLM screen -- added by silverAG
+	#ifdef RX_BAYANG_PROTOCOL_TELEMETRY_PID
+	      if (command == GESTURE_UUR)
+              {
+                        // turn TLM or PID on TLM screen at Devo 7e
+			extern int tlm_or_pid;
+			tlm_or_pid = !tlm_or_pid;
+           		if (tlm_or_pid) {ledblink = 3;} else {ledblink = 2;};
+              }
+	#endif
+	// end of UUR
+	//extra condition for switching between Devo and SilverVISE BLE telemetry (added by silverAG)
+	#if ((defined(RX_BAYANG_PROTOCOL_TELEMETRY) || defined(RX_BAYANG_PROTOCOL_TELEMETRY_PID)) && defined(RX_BAYANG_BLE_APP))
+	      if (command == GESTURE_UUL)
+              {
+                // turn Devo or BLE telemetry
+		extern int ble_or_standard;
+		ble_or_standard = !ble_or_standard;
+                if (ble_or_standard) {
+			extern void rx_init_ble2(void);
+			rx_init_ble2();
+			ledblink = 3;}
+		else {
+			extern void rx_init_tlm2(void);
+			rx_init_tlm2();
+			ledblink = 2;};
+              }
+	  #endif
+	// end of UUL
+							
 	  }
 		#endif		
 	}
