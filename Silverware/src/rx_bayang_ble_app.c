@@ -162,6 +162,12 @@ THE SOFTWARE.
 int current_PID_for_display = 0;
 int PID_index_delay = 0;
 
+//extern int tlm_or_pid;
+//if (tlm_or_pid)
+
+//int failsafe = 0; //disabled for enabling BLE and Devo TLM
+extern int failsafe; //added for enabling BLE and Devo TLM
+
 
 
 #ifdef RX_BAYANG_BLE_APP
@@ -171,12 +177,14 @@ extern char aux[AUXNUMBER];
 extern char lastaux[AUXNUMBER];
 extern char auxchange[AUXNUMBER];
 
-char lasttrim[4];
+char lasttrim_ble[4];
 
-char rfchannel[4];
+char rfchannel_ble[4];
 int rxaddress[5];
-int rxmode = 0;
-int rf_chan = 0;
+//int rxmode = 0; //disabled for enabling BLE and Devo TLM
+extern int rxmode; //added for enabling BLE and Devo TLM
+
+int rf_chan_ble = 0;
 
 unsigned int total_time_in_air = 0;
 unsigned int time_throttle_on = 0;
@@ -185,7 +193,7 @@ extern int random_seed;
 	
 void bleinit( void);
 
-void writeregs ( uint8_t data[] , uint8_t size )
+void writeregs_ble ( uint8_t data[] , uint8_t size )
 {
 spi_cson();
 for ( uint8_t i = 0 ; i < size ; i++)
@@ -198,7 +206,7 @@ delay(1000);
 
 
 
-void rx_init()
+void rx_init_ble()
 {
 
 	
@@ -228,14 +236,14 @@ aux[CH_AUX1] = 1;
 	
 #ifdef RADIO_XN297
 static uint8_t bbcal[6] = { 0x3f , 0x4c , 0x84 , 0x6F , 0x9c , 0x20  };
-writeregs( bbcal , sizeof(bbcal) );
+writeregs_ble( bbcal , sizeof(bbcal) );
 // new values
 static uint8_t rfcal[8] = { 0x3e , 0xc9 , 0x9a , 0xA0 , 0x61 , 0xbb , 0xab , 0x9c  };
-writeregs( rfcal , sizeof(rfcal) );
+writeregs_ble( rfcal , sizeof(rfcal) );
 
 static uint8_t demodcal[6] = { 0x39 , 0x0b , 0xdf , 0xc4 , 0xa7 , 0x03};
 //static uint8_t demodcal[6] = { 0x39 , 0x0b , 0xdf , 0xc4 , B00100111 , B00000000};
-writeregs( demodcal , sizeof(demodcal) );
+writeregs_ble( demodcal , sizeof(demodcal) );
 
 
 #define XN_TO_RX B00001111
@@ -294,6 +302,30 @@ int	rxcheck = xn_readreg( 0x0f); // rx address pipe 5
 	if ( rxcheck != 0xc6) failloop(3);
 #endif	
 }
+
+
+
+
+
+
+
+
+
+// re-initializing BLE for switching to BLE (SilverVISE) telemetry - added by silverAG
+#if ((defined(RX_BAYANG_PROTOCOL_TELEMETRY) || defined(RX_BAYANG_PROTOCOL_TELEMETRY_PID)) && defined(RX_BAYANG_BLE_APP))
+void rx_init_ble2()
+{
+delay(100);
+bleinit();
+delay(100);
+}
+#endif
+
+
+
+
+
+
 
 
 
@@ -452,8 +484,8 @@ btLeWhiten(packet, len, whitenstart[chan]);
 unsigned long packettime;
 int channelcount[4];
 int failcount;
-int packetrx;
-int packetpersecond;
+int packetrx_ble;
+int packetpersecond_ble;
 
 
 int skipstats[12];
@@ -529,14 +561,14 @@ xn_writetxaddress( txaddr );
 
 void send_beacon(void);
 
-int loopcounter = 0;
+//int loopcounter = 0;
 unsigned int ble_txtime;
 int ble_send = 0;
-int oldchan = 0;
+int oldchan_ble = 0;
 
 #define BLE_TX_TIMEOUT 10000
 
-void beacon_sequence()
+void beacon_sequence_ble()
 {
 static int beacon_seq_state = 0;
 	
@@ -547,7 +579,7 @@ static int beacon_seq_state = 0;
 	   if ( gettime() - ble_txtime > BLE_INTERVAL )
 		 {
 		 ble_send = 1;
-		 oldchan = rf_chan;
+		 oldchan_ble = rf_chan_ble;
 			 
 			 //SilverVISE - start
 			 #ifdef TX_POWER_ON_TLM
@@ -566,7 +598,7 @@ static int beacon_seq_state = 0;
 			if( (xn_readreg(0x17)&B00010000)  ) 
 			{
 				xn_writereg( 0 , XN_TO_RX ); 
-				xn_writereg(0x25, rfchannel[oldchan]);
+				xn_writereg(0x25, rfchannel_ble[oldchan_ble]);
 			 beacon_seq_state++;
 			 goto next;
 			}
@@ -692,7 +724,7 @@ total_time_in_air_time = total_time_in_air_time *10;
 int rate_and_mode_value = (aux[RATES]<<1) + !!(aux[LEVELMODE]);
 
 extern int bound_for_BLE_packet;
-extern int failsafe;
+
 int onground_and_bind = (failsafe<<2)+(onground<<1)+(bound_for_BLE_packet);
 
 #ifdef USE_STOCK_TX
@@ -702,8 +734,8 @@ int onground_and_bind = (failsafe<<2)+(onground<<1)+(bound_for_BLE_packet);
 #endif
 
 
-int packetpersecond_short = packetpersecond/2;
-if (packetpersecond_short>0xff) packetpersecond=0xff;
+int packetpersecond_short = packetpersecond_ble/2;
+if (packetpersecond_short>0xff) packetpersecond_ble=0xff;
 
 
 buf[L++] = B00100010; //PDU type, given address is random; 0x42 for Android and 0x40 for iPhone
@@ -953,10 +985,10 @@ static char checkpacket()
 }
 
 
-int rxdata[15];
+int rxdata_ble[15];
 
 
-float packettodata( int *  data)
+float packettodata_ble( int *  data)
 {
 	return ( ( ( data[0]&0x0003) * 256 + data[1] ) - 512 ) * 0.001953125 ;	
 }
@@ -964,20 +996,20 @@ float packettodata( int *  data)
 
 static int decodepacket( void)
 {
-	if ( rxdata[0] == 165 )
+	if ( rxdata_ble[0] == 165 )
 	{
 		 int sum = 0;
 		 for(int i=0; i<14; i++) 
 		 {
-			sum += rxdata[i];
+			sum += rxdata_ble[i];
 		 }	
-		if ( (sum&0xFF) == rxdata[14] )
+		if ( (sum&0xFF) == rxdata_ble[14] )
 		{
-			rx[0] = packettodata( &rxdata[4] );
-			rx[1] = packettodata( &rxdata[6] );
-			rx[2] = packettodata( &rxdata[10] );
+			rx[0] = packettodata_ble( &rxdata_ble[4] );
+			rx[1] = packettodata_ble( &rxdata_ble[6] );
+			rx[2] = packettodata_ble( &rxdata_ble[10] );
 		// throttle		
-			rx[3] = ( (rxdata[8]&0x0003) * 256 + rxdata[9] ) * 0.000976562f;
+			rx[3] = ( (rxdata_ble[8]&0x0003) * 256 + rxdata_ble[9] ) * 0.000976562f;
 		
 #ifndef DISABLE_EXPO
 	rx[0] = rcexpo ( rx[0] , EXPO_XY );
@@ -991,39 +1023,39 @@ static int decodepacket( void)
 			    // trims are not used as trims because they interfere
 			    // with dynamic trims feature of devo firmware
 
-//                      rx[0] = rx[0] + 0.03225 * 0.5 * (float)(((rxdata[4])>>2) - 31);
-//                      rx[1] = rx[1] + 0.03225 * 0.5 * (float)(((rxdata[6])>>2) - 31);
-//                      rx[2] = rx[2] + 0.03225 * 0.5 * (float)(((rxdata[10])>>2) - 31);
+//                      rx[0] = rx[0] + 0.03225 * 0.5 * (float)(((rxdata_ble[4])>>2) - 31);
+//                      rx[1] = rx[1] + 0.03225 * 0.5 * (float)(((rxdata_ble[6])>>2) - 31);
+//                      rx[2] = rx[2] + 0.03225 * 0.5 * (float)(((rxdata_ble[10])>>2) - 31);
 
 			    // Instead they are used as binary aux channels
 #ifdef USE_STOCK_TX
 char trims[4];
-			    trims[0] = rxdata[6] >> 2;
-			    trims[1] = rxdata[4] >> 2;
-			   // trims[2] = rxdata[8] >> 2; // throttle and yaw trims are not used
-			   // trims[3] = rxdata[10] >> 2;
+			    trims[0] = rxdata_ble[6] >> 2;
+			    trims[1] = rxdata_ble[4] >> 2;
+			   // trims[2] = rxdata_ble[8] >> 2; // throttle and yaw trims are not used
+			   // trims[3] = rxdata_ble[10] >> 2;
 			    for (int i = 0; i < 2; i++)
-				    if (trims[i] != lasttrim[i])
+				    if (trims[i] != lasttrim_ble[i])
 				      {
-					      aux[CH_PIT_TRIM + i] = trims[i] > lasttrim[i];
-					      lasttrim[i] = trims[i];
+					      aux[CH_PIT_TRIM + i] = trims[i] > lasttrim_ble[i];
+					      lasttrim_ble[i] = trims[i];
 				      }
 #else			
 // this share the same numbers to the above CH_PIT_TRIM etc		 					
-					aux[CH_VID] = (rxdata[2] & 0x10) ? 1 : 0;
+					aux[CH_VID] = (rxdata_ble[2] & 0x10) ? 1 : 0;
 												
-					aux[CH_PIC] = (rxdata[2] & 0x20) ? 1 : 0;						
+					aux[CH_PIC] = (rxdata_ble[2] & 0x20) ? 1 : 0;						
 #endif
 							
-				aux[CH_INV] = (rxdata[3] & 0x80)?1:0; // inverted flag
+				aux[CH_INV] = (rxdata_ble[3] & 0x80)?1:0; // inverted flag
 							
-			    aux[CH_FLIP] = (rxdata[2] & 0x08) ? 1 : 0;
+			    aux[CH_FLIP] = (rxdata_ble[2] & 0x08) ? 1 : 0;
 
-			    aux[CH_EXPERT] = (rxdata[1] == 0xfa) ? 1 : 0;
+			    aux[CH_EXPERT] = (rxdata_ble[1] == 0xfa) ? 1 : 0;
 
-			    aux[CH_HEADFREE] = (rxdata[2] & 0x02) ? 1 : 0;
+			    aux[CH_HEADFREE] = (rxdata_ble[2] & 0x02) ? 1 : 0;
 
-			    aux[CH_RTH] = (rxdata[2] & 0x01) ? 1 : 0;	// rth channel
+			    aux[CH_RTH] = (rxdata_ble[2] & 0x01) ? 1 : 0;	// rth channel
 
 
 
@@ -1043,29 +1075,29 @@ return 0; // first byte different
 
 
 
-void nextchannel()
+void nextchannel_ble()
 {
-	rf_chan++;
-	rf_chan%=4;
-	xn_writereg(0x25, rfchannel[rf_chan]);
+	rf_chan_ble++;
+	rf_chan_ble%=4;
+	xn_writereg(0x25, rfchannel_ble[rf_chan_ble]);
 }
 
 
 
-unsigned long lastrxtime;
-unsigned long failsafetime;
-unsigned long secondtimer;
-
-int failsafe = 0;
+unsigned long lastrxtime_ble;
+unsigned long failsafetime_ble;
+unsigned long secondtimer_ble;
 
 
-unsigned int skipchannel = 0;
-int lastrxchan;
-int timingfail = 0;
+
+
+unsigned int skipchannel_ble = 0;
+int lastrxchan_ble;
+int timingfail_ble = 0;
 extern int bound_for_BLE_packet; //SilverVISE
 
 
-void checkrx(void)
+void checkrx_ble(void)
 {
 	int packetreceived = checkpacket();
 	int pass = 0;
@@ -1073,24 +1105,24 @@ void checkrx(void)
 	  {
 		  if (rxmode == RX_MODE_BIND)
 		    {		// rx startup , bind mode
-			    xn_readpayload(rxdata, 15);
+			    xn_readpayload(rxdata_ble, 15);
 
-			    if (rxdata[0] == 164)
+			    if (rxdata_ble[0] == 164)
 			      {	// bind packet
-				      rfchannel[0] = rxdata[6];
-				      rfchannel[1] = rxdata[7];
-				      rfchannel[2] = rxdata[8];
-				      rfchannel[3] = rxdata[9];
+				      rfchannel_ble[0] = rxdata_ble[6];
+				      rfchannel_ble[1] = rxdata_ble[7];
+				      rfchannel_ble[2] = rxdata_ble[8];
+				      rfchannel_ble[3] = rxdata_ble[9];
 							
 							int rxaddress[5];
-				      rxaddress[0] = rxdata[1];
-				      rxaddress[1] = rxdata[2];
-				      rxaddress[2] = rxdata[3];
-				      rxaddress[3] = rxdata[4];
-				      rxaddress[4] = rxdata[5];
+				      rxaddress[0] = rxdata_ble[1];
+				      rxaddress[1] = rxdata_ble[2];
+				      rxaddress[2] = rxdata_ble[3];
+				      rxaddress[3] = rxdata_ble[4];
+				      rxaddress[4] = rxdata_ble[5];
 				      
 				      xn_writerxaddress(rxaddress);
-				      xn_writereg(0x25, rfchannel[rf_chan]);	// Set channel frequency 
+				      xn_writereg(0x25, rfchannel_ble[rf_chan_ble]);	// Set channel frequency 
 							rxmode = RX_MODE_NORMAL;
 							bound_for_BLE_packet=1; //SilverVISE
 
@@ -1102,31 +1134,31 @@ void checkrx(void)
 		  else
 		    {		// normal mode  
 #ifdef RXDEBUG
-			    channelcount[rf_chan]++;
-			    packettime = gettime() - lastrxtime;
+			    channelcount[rf_chan_ble]++;
+			    packettime = gettime() - lastrxtime_ble;
 					
-					if ( skipchannel&& !timingfail ) afterskip[skipchannel]++;
-					if ( timingfail ) afterskip[0]++;
+					if ( skipchannel_ble&& !timingfail_ble ) afterskip[skipchannel_ble]++;
+					if ( timingfail_ble ) afterskip[0]++;
 
 #endif
 
 unsigned long temptime = gettime();
 	
-			    nextchannel();
+			    nextchannel_ble();
 
-			    xn_readpayload(rxdata, 15);
+			    xn_readpayload(rxdata_ble, 15);
 			    pass = decodepacket();
 
 			    if (pass)
 			      {
 #ifdef RXDEBUG
-				      packetrx++;
+				      packetrx_ble++;
 #endif
-							skipchannel = 0;
-							timingfail = 0;
-							lastrxchan = rf_chan;
-							lastrxtime = temptime;
-				      failsafetime = temptime;
+							skipchannel_ble = 0;
+							timingfail_ble = 0;
+							lastrxchan_ble = rf_chan_ble;
+							lastrxtime_ble = temptime;
+				      failsafetime_ble = temptime;
 				      failsafe = 0;
 			      }
 			    else
@@ -1140,40 +1172,40 @@ unsigned long temptime = gettime();
 
 	  }			// end packet received
 
-	beacon_sequence();
+	beacon_sequence_ble();
 	
 	unsigned long time = gettime();
 
 		
 
 	// sequence period 12000
-	if (time - lastrxtime > (HOPPING_NUMBER*PACKET_PERIOD + 1000) && rxmode != RX_MODE_BIND)
+	if (time - lastrxtime_ble > (HOPPING_NUMBER*PACKET_PERIOD + 1000) && rxmode != RX_MODE_BIND)
 	  {			
 			//  channel with no reception   
-		  lastrxtime = time;
+		  lastrxtime_ble = time;
 			// set channel to last with reception
-			if (!timingfail) rf_chan = lastrxchan;
+			if (!timingfail_ble) rf_chan_ble = lastrxchan_ble;
 			// advance to next channel
-		  nextchannel();
+		  nextchannel_ble();
 			// set flag to discard packet timing
-			timingfail = 1;
+			timingfail_ble = 1;
 	  }
 		
-	if ( !timingfail && !ble_send && skipchannel < HOPPING_NUMBER+1 && rxmode != RX_MODE_BIND)
+	if ( !timingfail_ble && !ble_send && skipchannel_ble < HOPPING_NUMBER+1 && rxmode != RX_MODE_BIND)
 		{
-			unsigned int temp = time - lastrxtime ;
+			unsigned int temp = time - lastrxtime_ble ;
 
-			if ( temp > 1000 && ( temp - (PACKET_OFFSET) )/((int) PACKET_PERIOD) >= (skipchannel + 1) ) 
+			if ( temp > 1000 && ( temp - (PACKET_OFFSET) )/((int) PACKET_PERIOD) >= (skipchannel_ble + 1) ) 
 			{
-				nextchannel();
+				nextchannel_ble();
 #ifdef RXDEBUG				
-				skipstats[skipchannel]++;
+				skipstats[skipchannel_ble]++;
 #endif				
-				skipchannel++;
+				skipchannel_ble++;
 			}
 		}	
 	
-	if (time - failsafetime > FAILSAFETIME)
+	if (time - failsafetime_ble > FAILSAFETIME)
 	  {	//  failsafe
 		  failsafe = 1;
 		  rx[0] = 0;
@@ -1182,11 +1214,11 @@ unsigned long temptime = gettime();
 		  rx[3] = 0;
 	  }
 #ifdef RXDEBUG
-	if (gettime() - secondtimer > 1000000)
+	if (gettime() - secondtimer_ble > 1000000)
 	  {
-		  packetpersecond = packetrx;
-		  packetrx = 0;
-		  secondtimer = gettime();
+		  packetpersecond_ble = packetrx_ble;
+		  packetrx_ble = 0;
+		  secondtimer_ble = gettime();
 	  }
 #endif
 
@@ -1194,4 +1226,3 @@ unsigned long temptime = gettime();
 
 
 #endif
-
