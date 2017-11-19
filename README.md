@@ -40,7 +40,7 @@ The Android app "SilverVISE" by SilverAG (not me) is able to receive telemetry f
 *More information*
 http://sirdomsen.diskstation.me/dokuwiki/doku.php?id=silvervise
 
-This version of firmware contains dual telemetry mode - you can activate Devo telemetry and SilverVISE together and switch between them using UUL gestures. Additionally, you can enable PID displaying on Devo telemetry screen and switch between PID and standard telemetry data using options in config.h and UUR gestures.
+This version of firmware contains dual telemetry mode - you can activate Devo telemetry and SilverVISE together and switch between them using UUL gestures. Additionally, you can enable PID displaying on Devo telemetry screen and switch between PID and standard telemetry data using options in config.h and UUR gestures. For details check forum post: https://www.rcgroups.com/forums/showpost.php?p=38562034&postcount=1237
 
 ### Linux/gcc version
 The gcc version compiles close to 16k, and may need turning off features in order to make it fit. It's also possible to flash up to 32K with changes. Read __install.md__ for additional information. 
