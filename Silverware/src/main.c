@@ -109,9 +109,12 @@ char lastaux[AUXNUMBER];
 char auxchange[AUXNUMBER];
 
 // bind / normal rx mode
-extern int rxmode;
+//////////////////////////////////////////////extern int rxmode; //disabled for enabling BLE and Devo TLM
+int rxmode=0; //added for enabling BLE and Devo TLM
 // failsafe on / off
-extern int failsafe;
+/////////////////////////extern int failsafe; //disabled for enabling BLE and Devo TLM
+int failsafe = 0; //added for enabling BLE and Devo TLM
+
 extern float hardcoded_pid_identifier;
 
 // for led flash on gestures
@@ -122,6 +125,56 @@ unsigned long ledcommandtime = 0;
 void failloop( int val);
 
 int random_seed = 0;
+
+
+// extra code for switching between Devo and SilverVISE BLE telemetry (added by silverAG)
+int tlm_or_pid = 0; //TLM = 0, PID = 1  - for turning telemetry or PIDs at Devo 7e TLM screen (added by silverAG)
+int ble_or_standard=0; //Devo/DSM2 TLM=0, BLE=1
+uint8_t rxaddr_global[6] = { 0x2a ,  }; //backup TX address for switching back to Devo TLM
+
+#ifdef  RX_BAYANG_BLE_APP
+extern void checkrx_ble(void);
+extern void rx_init_ble(void);
+#endif
+#if (defined(RX_BAYANG_PROTOCOL_TELEMETRY) || defined(RX_BAYANG_PROTOCOL_TELEMETRY_PID))
+extern void checkrx_tlm(void);
+extern void rx_init_tlm(void);
+#endif
+
+#if ((defined(RX_BAYANG_PROTOCOL_TELEMETRY) || defined(RX_BAYANG_PROTOCOL_TELEMETRY_PID)) && defined(RX_BAYANG_BLE_APP)) //extra condition for switching between Devo and BLE telemetry (added by silverAG)
+void checkrx(void)
+{
+	if (ble_or_standard) {checkrx_ble();} else {checkrx_tlm();};
+}
+void rx_init(void)
+{
+	if (ble_or_standard) {rx_init_ble();} else {rx_init_tlm();};
+}
+#endif
+#if ((!defined(RX_BAYANG_PROTOCOL_TELEMETRY) && !defined(RX_BAYANG_PROTOCOL_TELEMETRY_PID)) && defined(RX_BAYANG_BLE_APP)) //extra condition for switching between Devo and BLE telemetry (added by silverAG)
+void checkrx(void)
+{
+	checkrx_ble();
+}
+void rx_init(void)
+{
+	rx_init_ble();
+}
+#endif
+#if ((defined(RX_BAYANG_PROTOCOL_TELEMETRY) || defined(RX_BAYANG_PROTOCOL_TELEMETRY_PID)) && !defined(RX_BAYANG_BLE_APP)) //extra condition for switching between Devo and BLE telemetry (added by silverAG)
+void checkrx(void)
+{
+	checkrx_tlm();
+}
+void rx_init(void)
+{
+	rx_init_tlm();
+}
+#endif
+// end of code for switching between SIlverVISE and Devo TLM
+
+
+
 
 int main(void)
 {
