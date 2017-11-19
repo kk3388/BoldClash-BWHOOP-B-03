@@ -207,7 +207,9 @@ return 0; // first byte different
 
   char rfchannel[4];
 	int rxaddress[5];
-	int rxmode = 0;
+	//int rxmode = 0; //disabled for enabling BLE and Devo TLM
+	extern int rxmode; //added for enabling BLE and Devo TLM
+
 	int chan = 0;
 
 void nextchannel()
@@ -222,7 +224,8 @@ unsigned long lastrxtime;
 unsigned long failsafetime;
 unsigned long secondtimer;
 
-int failsafe = 0;
+//int failsafe = 0; //disabled for enabling BLE and Devo TLM
+extern int failsafe; //added for enabling BLE and Devo TLM
 
 //#define RXDEBUG
 
