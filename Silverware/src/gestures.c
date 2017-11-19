@@ -155,6 +155,17 @@ const uint8_t command6[GSIZE] = {
 const uint8_t command7[GSIZE] = {
 	GESTURE_CENTER_IDLE, GESTURE_UP, GESTURE_CENTER, GESTURE_DOWN, GESTURE_CENTER, GESTURE_LEFT, GESTURE_CENTER
 };
+
+// U U R - switch between telemetry and PID data on Devo 7e TLM screen - added by SilverAG
+const uint8_t commandTLM[GSIZE] = {
+	GESTURE_CENTER_IDLE, GESTURE_UP, GESTURE_CENTER, GESTURE_UP, GESTURE_CENTER, GESTURE_RIGHT, GESTURE_CENTER
+};
+
+// U U L - switch between BLE and Devo telemetry - added by SilverAG
+const uint8_t commandBLE[GSIZE] = {
+	GESTURE_CENTER_IDLE, GESTURE_UP, GESTURE_CENTER, GESTURE_UP, GESTURE_CENTER, GESTURE_LEFT, GESTURE_CENTER
+};
+
 #endif
 
 uint8_t check_command( uint8_t  buffer1[] , const uint8_t  command[]  )
@@ -247,7 +258,29 @@ int gesture_sequence(int currentgesture)
 			    return GESTURE_UDL;
 		    }
 			#endif
+			//extra conditions for switching between Devo and BLE telemetry (added by silverAG)
+			#if ((defined(RX_BAYANG_PROTOCOL_TELEMETRY) || defined(RX_BAYANG_PROTOCOL_TELEMETRY_PID)) && defined(RX_BAYANG_BLE_APP))
+		  if (check_command ( &gbuffer[0] , &commandBLE[0] ))
+		    {
+			    // command ble tlm or devo tlm
 
+			    //change buffer so it does not trigger again
+			    gbuffer[1] = GESTURE_OTHER;
+			    return GESTURE_UUL;
+		    }
+				#endif
+      //Switch between telemetry and PID data on Devo 7e TLM screen - added by silverAG
+			#ifdef RX_BAYANG_PROTOCOL_TELEMETRY_PID
+			if (check_command ( &gbuffer[0] , &commandTLM[0] ))
+		    {
+			    // command tlm
+
+			    //change buffer so it does not trigger again
+			    gbuffer[1] = GESTURE_OTHER;
+			    return GESTURE_UUR;
+		    }
+			#endif
+				
 	  }
 
 	return GESTURE_NONE;
