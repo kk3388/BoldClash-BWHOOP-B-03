@@ -43,14 +43,43 @@ THE SOFTWARE.
 #include "defines.h"
 
 
+
+// --------------------------- DUAL PIDS CODE -----------------
+
+//
+// first PID set (used as set 1 in dual PID mode or as deault set in single PID mode)
+//
 // Kp	                  ROLL       PITCH     YAW
-float pidkp[PIDNUMBER] = { 13.0e-2 , 13.0e-2  , 6e-1 }; 
+float pidkp1[PIDNUMBER] = { 13.0e-2 , 13.0e-2  , 6e-1 }; 
 
 // Ki		              ROLL       PITCH     YAW
-float pidki[PIDNUMBER] = { 12.8e-1  , 12.8e-1 , 3e-1 };	
+float pidki1[PIDNUMBER] = { 12.8e-1  , 12.8e-1 , 3e-1 };	
 
 // Kd			          ROLL       PITCH     YAW
-float pidkd[PIDNUMBER] = { 5.5e-1 , 5.5e-1  , 0.0e-1 };	
+float pidkd1[PIDNUMBER] = { 5.5e-1 , 5.5e-1  , 0.0e-1 };	
+
+
+//
+// second PID set (used as set 2 in dual PID mode - has no function in single PID mode)
+//
+// Kp	                  ROLL       PITCH     YAW
+float pidkp2[PIDNUMBER] = { 19.0e-2 , 19.0e-2  , 8e-1 }; 
+
+// Ki		              ROLL       PITCH     YAW
+float pidki2[PIDNUMBER] = { 15.6e-1  , 15.6e-1 , 11.4e-1 };	
+
+// Kd			          ROLL       PITCH     YAW
+float pidkd2[PIDNUMBER] = { 5.5e-1 , 5.5e-1  , 0.0e-1 };	
+
+
+
+// working arrays - do not change
+float pidkp[PIDNUMBER] = { 0 , 0  , 0 }; 
+float pidki[PIDNUMBER] = { 0 , 0  , 0 };	
+float pidkd[PIDNUMBER] = { 0 , 0  , 0 };	
+
+// --------------------------- END OF DUAL PIDS CODE -----------------
+
 
 // "setpoint weighting" 0.0 - 1.0 where 1.0 = normal pid
 // #define ENABLE_SETPOINT_WEIGHTING
@@ -69,11 +98,15 @@ const float integrallimit[PIDNUMBER] = { 0.8 , 0.8 , 0.5 };
 
 
 // non changable things below
-float * pids_array[3] = {pidkp, pidki, pidkd};
+//float * pids_array[3] = {pidkp, pidki, pidkd}; //disabled for dual PIDs code
+float * pids_array[3] = {pidkp1, pidki1, pidkd1};	//dual PIDs code (original array filled with PID set1)
+float * pids_array2[3] = {pidkp2, pidki2, pidkd2}; //dual PIDs code (set2)
 int number_of_increments[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 int current_pid_axis = 0;
 int current_pid_term = 0;
 float * current_pid_term_pointer = pidkp;
+float * current_pid_term_pointer1 = pidkp1; // dual PIDs code
+float * current_pid_term_pointer2 = pidkp2; // dual PIDs code
 
 float ierror[PIDNUMBER] = { 0 , 0 , 0};	
 float pidoutput[PIDNUMBER];
@@ -224,14 +257,20 @@ int next_pid_term()
 	{
 		case 0:
 			current_pid_term_pointer = pidki;
+			current_pid_term_pointer1 = pidki1; // dual PIDs code
+			current_pid_term_pointer2 = pidki2; // dual PIDs code
 			current_pid_term = 1;
 			break;
 		case 1:
 			current_pid_term_pointer = pidkd;
+			current_pid_term_pointer1 = pidkd1; // dual PIDs code
+			current_pid_term_pointer2 = pidkd2; // dual PIDs code
 			current_pid_term = 2;
 			break;
 		case 2:
 			current_pid_term_pointer = pidkp;
+			current_pid_term_pointer1 = pidkp1; // dual PIDs code
+			current_pid_term_pointer2 = pidkp2; // dual PIDs code
 			current_pid_term = 0;
 			break;
 	}
@@ -279,10 +318,43 @@ int change_pid_value(int increase)
 	}
     
 	current_pid_term_pointer[current_pid_axis] = current_pid_term_pointer[current_pid_axis] * multiplier;
-	
+
+// -------------- DUAL PIDS CODE -------------
+#ifdef ENABLE_DUAL_PIDS
+	extern char aux[AUXNUMBER];
+	if (!aux[PID_SET_CHANGE])
+	{
+		current_pid_term_pointer1[current_pid_axis]=current_pid_term_pointer[current_pid_axis];
+	} else
+	{
+		current_pid_term_pointer2[current_pid_axis]=current_pid_term_pointer[current_pid_axis];
+	}	
+#endif
+#ifndef ENABLE_DUAL_PIDS
+	current_pid_term_pointer1[current_pid_axis]=current_pid_term_pointer[current_pid_axis];
+#endif
+// -------------- END OF DUAL PIDS CODE -------------
+
     #ifdef COMBINE_PITCH_ROLL_PID_TUNING
 	if (current_pid_axis == 0) {
 		current_pid_term_pointer[current_pid_axis+1] = current_pid_term_pointer[current_pid_axis+1] * multiplier;
+
+// -------------- DUAL PIDS CODE -------------
+#ifdef ENABLE_DUAL_PIDS
+	extern char aux[AUXNUMBER];
+	if (!aux[PID_SET_CHANGE])
+	{
+		current_pid_term_pointer1[current_pid_axis+1]=current_pid_term_pointer[current_pid_axis+1];
+	} else
+	{
+		current_pid_term_pointer2[current_pid_axis+1]=current_pid_term_pointer[current_pid_axis+1];
+	}	
+#endif
+#ifndef ENABLE_DUAL_PIDS
+		current_pid_term_pointer1[current_pid_axis+1]=current_pid_term_pointer[current_pid_axis+1];
+#endif
+// -------------- END OF DUAL PIDS CODE -------------
+		
 	}
 	#endif
 	
@@ -303,5 +375,7 @@ int decrease_pid()
 {
 	return change_pid_value(0);
 }
+
+
 
 
