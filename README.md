@@ -46,7 +46,7 @@ This version of firmware contains dual telemetry mode, but only for bayang proto
 
 ### Dual PIDs
 
-It is possiuble to enable dual PID mode and assign selection betweenm two PID sets to desired channel. Both PID sets can be tuned separatelly via gestures, and can be saved with pid save gesture. Curently selected PID set will be displayed in Devo or iin SilverVISE application. For details check RC Groups forum post: https://www.rcgroups.com/forums/showpost.php?p=38611570&postcount=1290
+It is possible to enable dual PID mode and assign selection between two PID sets to desired channel. Both PID sets can be tuned separatelly via gestures, and can be saved with pid save gesture. Curently selected PID set will be displayed in Devo or in SilverVISE application. For details check RC Groups forum post: https://www.rcgroups.com/forums/showpost.php?p=38611570&postcount=1290
 
 ### Linux/gcc version
 The gcc version compiles close to 16k, and may need turning off features in order to make it fit. It's also possible to flash up to 32K with changes. Read __install.md__ for additional information. 
