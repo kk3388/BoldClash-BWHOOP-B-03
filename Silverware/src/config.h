@@ -197,8 +197,8 @@
 //#define BUZZER_ENABLE
 
 // activate dual PIDs mode (silverAG)
-#define ENABLE_DUAL_PIDS
-#define PID_SET_CHANGE DEVO_CHAN_10 //channel used to switch between PID sets
+//#define ENABLE_DUAL_PIDS
+//#define PID_SET_CHANGE DEVO_CHAN_10 //channel used to switch between PID sets
 
 // Comment out to disable pid tuning gestures
 #define PID_GESTURE_TUNING
