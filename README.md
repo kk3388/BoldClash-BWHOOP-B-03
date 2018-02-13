@@ -57,7 +57,7 @@ The boldclash settings may need changes to work with gcc well. Turn off the soft
 http://sirdomsen.diskstation.me/dokuwiki/doku.php?id=start
 
 
-
+-------------------
 Fork changes:
 
 ### 13.02.18
@@ -68,6 +68,7 @@ Fork changes:
 + PIDs shown at Devo screen (partial solution - helpfull but not 100% usefull)
 
 -------------------
+Official FW changes (source for this fork):
 
 ### 29.08.17
 * moved flash save to 31k
