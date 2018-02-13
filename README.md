@@ -40,7 +40,13 @@ The Android app "SilverVISE" by SilverAG is able to receive telemetry from the q
 *More information*
 http://sirdomsen.diskstation.me/dokuwiki/doku.php?id=silvervise
 
+### Android App telemetry and Devo telemetry with PIDs - switchable
+
 This version of firmware contains dual telemetry mode, but only for bayang protocol. You can have Devo telemetry and SilverVISE together but activate only one at a time and switch between them using UUL gestures. Additionally, you can enable PID displaying on Devo telemetry screen and switch between PID and standard telemetry data using options in config.h and UUR gestures. For details check RC Groups forum post: https://www.rcgroups.com/forums/showpost.php?p=38611570&postcount=1290
+
+### Dual PIDs
+
+It is possiuble to enable dual PID mode and assign selection betweenm two PID sets to desired channel. Both PID sets can be tuned separatelly via gestures, and can be saved with pid save gesture. Curently selected PID set will be displayed in Devo or iin SilverVISE application. For details check RC Groups forum post: https://www.rcgroups.com/forums/showpost.php?p=38611570&postcount=1290
 
 ### Linux/gcc version
 The gcc version compiles close to 16k, and may need turning off features in order to make it fit. It's also possible to flash up to 32K with changes. Read __install.md__ for additional information. 
@@ -49,6 +55,18 @@ The boldclash settings may need changes to work with gcc well. Turn off the soft
 
 ### Wiki
 http://sirdomsen.diskstation.me/dokuwiki/doku.php?id=start
+
+
+Fork changes:
+
+### 13.02.18
++ Dual PIDs support
+
+### 19.11.17
++ Dual telemetry - switch between SilverVISE and Devo telemetrry with gestures
++ PIDs shown at Devo screen (partial solution - helpfull but not 100% usefull)
+
+-------------------
 
 ### 29.08.17
 * moved flash save to 31k
