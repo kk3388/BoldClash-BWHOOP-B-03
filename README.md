@@ -60,6 +60,9 @@ http://sirdomsen.diskstation.me/dokuwiki/doku.php?id=start
 -------------------
 Fork changes:
 
+### 04.03.18
++ Added factory radio settings to have better BLE signal for SilverVISE (based on silverxxx changes from 04.03.18)
+
 ### 13.02.18
 + Dual PIDs support
 
