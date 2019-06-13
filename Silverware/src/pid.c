@@ -594,10 +594,24 @@ int next_pid_axis()
 	return current_pid_axis + 1;
 }
 
-#define PID_GESTURES_MULTI 1.1f
+//#define PID_GESTURES_MULTI 1.1f //removed from here
 
 int change_pid_value(int increase)
 {
+#ifdef PID_TUNING_INCDEC_FACTOR			//custom fixed step for inc/dec PIDs
+	float multiplier = 0.1f; //pidkp roll & pitch: 0.xe-2 - other PIDs: 0.xe-1
+	if (increase) {
+		number_of_increments[current_pid_term][current_pid_axis]++;
+	}
+	else {
+		number_of_increments[current_pid_term][current_pid_axis]--;
+		multiplier = -0.1f;
+	}
+	if ((current_pid_term==0) && (current_pid_axis==0 || current_pid_axis==1)) multiplier = multiplier/10.0f; //pidkp roll & pitch: 0.xe-2 - other PIDs: 0.xe-1
+	float newPID = current_pid_term_pointer[current_pid_axis] + ((float)PID_TUNING_INCDEC_FACTOR * multiplier);
+	if (newPID>0) current_pid_term_pointer[current_pid_axis] = newPID;	
+#else
+	#define PID_GESTURES_MULTI 1.1f // moved here
 	float multiplier = 1.0f/(float)PID_GESTURES_MULTI;
 	if (increase) {
 		multiplier = (float)PID_GESTURES_MULTI;
@@ -608,10 +622,14 @@ int change_pid_value(int increase)
 	}
     
 	current_pid_term_pointer[current_pid_axis] = current_pid_term_pointer[current_pid_axis] * multiplier;
-	
+#endif	
     #ifdef COMBINE_PITCH_ROLL_PID_TUNING
 	if (current_pid_axis == 0) {
+		#ifdef PID_TUNING_INCDEC_FACTOR //custom fixed step for inc/dec PIDs
+		if (newPID>0) current_pid_term_pointer[current_pid_axis+1] = newPID;	
+		#else
 		current_pid_term_pointer[current_pid_axis+1] = current_pid_term_pointer[current_pid_axis+1] * multiplier;
+		#endif
 	}
 	#endif
 	
